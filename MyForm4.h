@@ -676,7 +676,7 @@ private: System::Void etiketleToolStripMenuItem_Click(System::Object^  sender, S
 	dilation_buffer = dilation(erosion_buffer, Width, Height);
 
 	BYTE *etiket_buffer = new BYTE[Width*Height];
-	etiket_buffer = etiket(dilation_buffer, Width, Height);
+	etiket_buffer = label(dilation_buffer, Width, Height);
 
 	pictureBox4->Width = Width;
 	pictureBox4->Height = Height;
@@ -711,10 +711,10 @@ private: System::Void nesneyakalaToolStripMenuItem_Click(System::Object^  sender
 	dilation_buffer = dilation(erosion_buffer, Width, Height);
 
 	BYTE *etiket_buffer = new BYTE[Width*Height];
-	etiket_buffer = etiket(dilation_buffer, Width, Height);
+	etiket_buffer = label(dilation_buffer, Width, Height);
 
 	BYTE *nesne_yakala_buffer = new BYTE[Width*Height];
-	nesne_yakala_buffer = nesne_yakala(etiket_buffer, Width, Height);
+	nesne_yakala_buffer = object_recognition(etiket_buffer, Width, Height);
 
 	pictureBox4->Width = Width;
 	pictureBox4->Height = Height;
@@ -755,7 +755,7 @@ private: System::Void kenarcýkarToolStripMenuItem_Click(System::Object^  sender,
 	
 	BYTE *Buffer_kenar=Buffer;
 	BYTE *kenarbul_buffer = new BYTE[(Width*Height)];
-	kenarbul_buffer = kenar_bul(Buffer_kenar, Width, Height);
+	kenarbul_buffer = canny_Andhough(Buffer_kenar, Width, Height);
 
 	pictureBox4->Width = Width;
 	pictureBox4->Height = Height;

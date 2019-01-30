@@ -13,8 +13,8 @@ BYTE *histogram_equalized(BYTE *Buffer, unsigned int width, unsigned int height)
 BYTE *k_means(BYTE *Buffer, unsigned int Width, unsigned int Height);
 BYTE *dilation(BYTE *Buffer, unsigned int Width, unsigned int Height);
 BYTE *erosion(BYTE *Buffer, unsigned int Width, unsigned int Height);
-BYTE *etiket(BYTE *Buffer, unsigned int Width, unsigned int Height);
+BYTE *label(BYTE *Buffer, unsigned int Width, unsigned int Height);
 float oklid_Distance(float *arr1, float *arr2, int size);
-BYTE *nesne_yakala(BYTE *Buffer, unsigned int Width, unsigned int Height);
-void cizme(BYTE *Buffer, unsigned int Width, unsigned int Height,int padding, int x1, int x2, int y1, int y2, int renk);
-BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height);
+BYTE *object_recognition(BYTE *Buffer, unsigned int Width, unsigned int Height);
+void draw(BYTE *Buffer, unsigned int Width, unsigned int Height,int padding, int x1, int x2, int y1, int y2, int renk);
+BYTE *canny_Andhough(BYTE *Buffer, unsigned int Width, unsigned int Height);

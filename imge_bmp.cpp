@@ -204,7 +204,7 @@ BYTE* ConvertIntensityToBMP(BYTE* Buffer, int width, int height, long* newsize)
 
 BYTE *zoom(BYTE * Buffer, unsigned int zoom_width1, unsigned int zoom_width2, unsigned int zoom_height1, unsigned int zoom_height2,unsigned int Width)
 {
-	int ilk_indeks = 0;
+	int first_index = 0;
 	unsigned int k=0;
 	unsigned int zoom_width = ((zoom_width2 - zoom_width1) + 1);
 	unsigned int zoom_height = ((zoom_height2 - zoom_height1) + 1);
@@ -232,13 +232,13 @@ BYTE *zoom(BYTE * Buffer, unsigned int zoom_width1, unsigned int zoom_width2, un
 
 	for (unsigned int i = zoom_height1; i < zoom_height2; i++)
 	{
-		for (int m = 0; m < 2 * zoom_width - 1;m++)
+		for (int m = 0; m < 2 * zoom_width - 1; m++)
 		{
-			double gecici_bellek = (Zoom_buffer[ilk_indeks + m] + Zoom_buffer[ilk_indeks + 2 * (2 * zoom_width - 1) + m]) / 2;
+			double gecici_bellek = (Zoom_buffer[first_index + m] + Zoom_buffer[first_index + 2 * (2 * zoom_width - 1) + m]) / 2;
 			Zoom_buffer[k] = gecici_bellek;
 			k++;
 		}
-		ilk_indeks = ilk_indeks + 2 * (2 * zoom_width - 1);
+		first_index = first_index + 2 * (2 * zoom_width - 1);
 		k = k + ((2 * zoom_width) - 1);
 	}
 	return Zoom_buffer;
@@ -293,12 +293,7 @@ BYTE *zoom(BYTE * Buffer, unsigned int zoom_width1, unsigned int zoom_width2, un
 
 
 
-
-
-
-
-
-	//**********YAVUZUN KODLAR****************
+	//**********Araya sýfýr koyarak zoom, daha optimize kodu****************
 
 	/*for (int i = 0; i <zoom_height;i++)
 	{
@@ -313,10 +308,6 @@ BYTE *zoom(BYTE * Buffer, unsigned int zoom_width1, unsigned int zoom_width2, un
 	}*/
 
 
-
-
-
-
 	/*delete[] Buffer;
 	delete[] Raw_Intensity;
 	delete[] Zoom_buffer;*/
@@ -324,7 +315,7 @@ BYTE *zoom(BYTE * Buffer, unsigned int zoom_width1, unsigned int zoom_width2, un
 
 int *histogram(BYTE *Buffer, unsigned int Width, unsigned int Height)
 {
-	int *histogram_dizi = new int[256];
+	int *histogram_array = new int[256];
 	int numberofpixel = 0;
 	for (int i = 0; i<256; i++)
 	{
@@ -335,31 +326,30 @@ int *histogram(BYTE *Buffer, unsigned int Width, unsigned int Height)
 				numberofpixel++;
 			}
 		}
-		histogram_dizi[i] = numberofpixel;
-		//this->chart1->Series["Histogram"]->Points->AddXY(i, histogram_dizi[i]);		// ayný zamanda grafik olusturmak istersek kullanýlabilir.
+		histogram_array[i] = numberofpixel;
 		numberofpixel = 0;
 	}
 
-	return histogram_dizi;
+	return histogram_array;
 }
 
 BYTE *histogram_equalized(BYTE *Buffer, unsigned int Width, unsigned int Height)
 {
-	double toplam = 0;
-	double toplam2 = 0;
-	int *histogram_Dizi = new int[256];
-	histogram_Dizi = histogram(Buffer, Width, Height);
+	double sum = 0;
+	double sum2 = 0;
+	int *histogram_array = new int[256];
+	histogram_array = histogram(Buffer, Width, Height);
 
 	for (int i = 0; i < 256; i++)
 	{
-		toplam += histogram_Dizi[i];
+		sum += histogram_array[i];
 	}
 
 	int *histogram_equalized_values = new int[256];
 	for (int i = 0; i < 256; i++)
 	{
-		toplam2 += histogram_Dizi[i];
-		histogram_equalized_values[i] = round((toplam2 / toplam) * 255.0);	//HÝSTOGRAM BÝLGÝSÝNE BAKARAK EQUALÝZED DEÐERLERÝNÝ DÝZÝYE ATTIK
+		sum2 += histogram_array[i];
+		histogram_equalized_values[i] = round((sum2 / sum) * 255.0);	//HÝSTOGRAM BÝLGÝSÝNE BAKARAK EQUALÝZED DEÐERLERÝNÝ DÝZÝYE ATTIK
 	}
 
 	BYTE *histogram_equalized = new BYTE[Width*Height];
@@ -384,11 +374,11 @@ BYTE *histogram_equalized(BYTE *Buffer, unsigned int Width, unsigned int Height)
 BYTE *k_means(BYTE *Buffer, unsigned int Width, unsigned int Height)
 {
 	float t1=0, t2=255, t11=-1,t22=-1;
-	double toplam1 = 0, toplam2 = 0;
-	double bolum1 = 0, bolum2 = 0;
+	double sum1 = 0, sum2 = 0;
+	double division1 = 0, division2 = 0;
 
-	int *histogram_dizi = new int[256];
-	histogram_dizi = histogram(Buffer, Width, Height);
+	int *histogram_array = new int[256];
+	histogram_array = histogram(Buffer, Width, Height);
 
 	while (true)
 	{
@@ -396,18 +386,18 @@ BYTE *k_means(BYTE *Buffer, unsigned int Width, unsigned int Height)
 		{
 			if (fabs(i - t1) < fabs(i - t2))
 			{
-				toplam1 += (i*histogram_dizi[i]);
-				bolum1 += histogram_dizi[i];
+				sum1 += (i*histogram_array[i]);
+				division1 += histogram_array[i];
 			}
 			else
 			{
-				toplam2 += (i*histogram_dizi[i]);
-				bolum2 += histogram_dizi[i];
+				sum2 += (i*histogram_array[i]);
+				division2 += histogram_array[i];
 			}
 		}
 
-		t11 = toplam1 / bolum1;
-		t22 = toplam2 / bolum2;
+		t11 = sum1 / division1;
+		t22 = sum2 / division2;
 
 		if (t1 == t11 && t2 == t22)
 			break;
@@ -432,22 +422,22 @@ BYTE *k_means(BYTE *Buffer, unsigned int Width, unsigned int Height)
 BYTE *dilation(BYTE *Buffer, unsigned int Width, unsigned int Height)
 {
 	BYTE *dilation = new BYTE[Width*Height];
-	int M;
-	bool sonuc=0;
+	int C;
+	bool result=0;
 	
 	for (int i = 0; i < Height; i++)
 	{
 		for (int j = 0; j < Width; j++)
 		{
-			M = (i*Width + j);
-			//sonuc=(Buffer[(M - Width -1)] || Buffer[(M - Width)] || Buffer[(M - Width +1)] || Buffer[(M - 1)] || Buffer[M] || Buffer[(M + 1)] || Buffer[(M + Width - 1)] || Buffer[(M + Width)]|| Buffer[(M + Width + 1)]);
-			sonuc = ( Buffer[(M - Width)] || Buffer[(M - 1)] || Buffer[M] || Buffer[(M + 1)]  || Buffer[(M + Width)] );
+			C = (i*Width + j);
+			//result=(Buffer[(C - Width -1)] || Buffer[(C - Width)] || Buffer[(C - Width +1)] || Buffer[(C - 1)] || Buffer[C] || Buffer[(C + 1)] || Buffer[(C + Width - 1)] || Buffer[(C + Width)]|| Buffer[(C + Width + 1)]);
+			result = ( Buffer[(C - Width)] || Buffer[(C - 1)] || Buffer[C] || Buffer[(C + 1)]  || Buffer[(C + Width)] );
 		
 
-			if (sonuc== true)
-				dilation[M] = 255;
+			if (result== true)
+				dilation[C] = 255;
  			else
-				dilation[M] = 0;
+				dilation[C] = 0;
 			
 		}
 		
@@ -459,21 +449,21 @@ BYTE *dilation(BYTE *Buffer, unsigned int Width, unsigned int Height)
 BYTE *erosion(BYTE *Buffer, unsigned int Width, unsigned int Height)
 {
 	BYTE *erosion = new BYTE[Width*Height];
-	int M;
-	bool sonuc = 0;
+	int C;
+	bool result = 0;
 
 	for (int i = 0; i < Height; i++)
 	{
 		for (int j = 0; j < Width; j++)
 		{
-			M = (i*Width + j);
-			sonuc = (Buffer[(M - Width - 1)] && Buffer[(M - Width)] && Buffer[(M - Width + 1)] && Buffer[(M - 1)] && Buffer[M] && Buffer[(M + 1)] && Buffer[(M + Width - 1)] && Buffer[(M + Width)] && Buffer[(M + Width + 1)]);
-			//sonuc = (Buffer[(M - Width)] && Buffer[(M - 1)] && Buffer[M] && Buffer[(M + 1)] && Buffer[(M + Width)]);
+			C = (i*Width + j);
+			result = (Buffer[(C - Width - 1)] && Buffer[(C - Width)] && Buffer[(C - Width + 1)] && Buffer[(C - 1)] && Buffer[C] && Buffer[(C + 1)] && Buffer[(C + Width - 1)] && Buffer[(C + Width)] && Buffer[(C + Width + 1)]);
+			//result = (Buffer[(C - Width)] && Buffer[(C - 1)] && Buffer[C] && Buffer[(C + 1)] && Buffer[(C + Width)]);
 
-			if (sonuc == true)
-				erosion[M] = 255;
+			if (result == true)
+				erosion[C] = 255;
 			else
-				erosion[M] = 0;
+				erosion[C] = 0;
 
 		}
 
@@ -482,44 +472,44 @@ BYTE *erosion(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	return erosion;
 }
 
-BYTE *etiket(BYTE *Buffer, unsigned int Width, unsigned int Height)
+BYTE *label(BYTE *Buffer, unsigned int Width, unsigned int Height)
 {
-	BYTE *etiket = new BYTE[Width*Height];
-	etiket = Buffer;
+	BYTE *label = new BYTE[Width*Height];
+	label = Buffer;
 
-	int M;
-	int katla = 0;
+	int C;
+	int X = 0;
 
 
 	for (int i = 1; i < Height - 1; i++)
 	{
 		for (int j = 1; j < Width - 1; j++)
 		{
-			M = (i*Width + j);
-			int gecici_bellek = 255;
+			C = (i*Width + j);
+			int temp = 255;
 
-			if (etiket[M] == 255)
+			if (label[C] == 255)
 			{
-				int b[9] = { etiket[(M - Width - 1)] ,etiket[(M - Width)] , etiket[(M - Width + 1)] , etiket[(M - 1)] , etiket[M] , etiket[(M + 1)] , etiket[(M + Width - 1)] , etiket[(M + Width)] ,etiket[(M + Width + 1)] };
+				int array[9] = { label[(C - Width - 1)] ,label[(C - Width)] , label[(C - Width + 1)] , label[(C - 1)] , label[C] , label[(C + 1)] , label[(C + Width - 1)] , label[(C + Width)] ,label[(C + Width + 1)] };
 
 				for (int i = 0; i < 9; i++)
 				{
 
-					if (b[i] != 0 && b[i] != 255)
+					if (array[i] != 0 && array[i] != 255)
 					{
-						if (b[i] < gecici_bellek)
-							gecici_bellek = b[i];
+						if (array[i] < temp)
+							temp = array[i];
 
 					}
 				}
 
-				if (gecici_bellek != 255)
-					etiket[M] = gecici_bellek;
+				if (temp != 255)
+					label[C] = temp;
 
 				else
 				{
-					etiket[M] = 250 - katla;
-					katla += 2;
+					label[C] = 250 - X;
+					X += 2;
 				}
 			}
 		}
@@ -529,31 +519,31 @@ BYTE *etiket(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = Width - 1; j > 1; j--)
 		{
-			M = (i*Width + j);
-			int gecici_bellek = 255;
+			C = (i*Width + j);
+			int temp = 255;
 
-			if (etiket[M] > 0)
+			if (label[C] > 0)
 			{
-				int b[9] = { etiket[(M - Width - 1)] ,etiket[(M - Width)] , etiket[(M - Width + 1)] , etiket[(M - 1)] , etiket[M] , etiket[(M + 1)] , etiket[(M + Width - 1)] , etiket[(M + Width)] ,etiket[(M + Width + 1)] };
+				int b[9] = { label[(C - Width - 1)] ,label[(C - Width)] , label[(C - Width + 1)] , label[(C - 1)] , label[C] , label[(C + 1)] , label[(C + Width - 1)] , label[(C + Width)] ,label[(C + Width + 1)] };
 
 				for (int i = 0; i < 9; i++)
 				{
 
 					if (b[i] != 0 && b[i] != 255)
 					{
-						if (b[i] < gecici_bellek)
-							gecici_bellek = b[i];
+						if (b[i] < temp)
+							temp = b[i];
 
 					}
 				}
 
-				if (gecici_bellek != 255)
-					etiket[M] = gecici_bellek;
+				if (temp != 255)
+					label[C] = temp;
 
 			}
 		}
 	}
-	return etiket;
+	return label;
 
 }
 
@@ -567,7 +557,7 @@ float oklid_Distance(float *arr1, float *arr2, int size)
 	return sqrt(temp);
 }
 
-void cizme(BYTE *Buffer, unsigned int Width, unsigned int Height,int padding , int x1, int x2, int y1, int y2, int renk)
+void draw(BYTE *Buffer, unsigned int Width, unsigned int Height,int padding , int x1, int x2, int y1, int y2, int object)
 {
 	
 	
@@ -578,30 +568,30 @@ void cizme(BYTE *Buffer, unsigned int Width, unsigned int Height,int padding , i
 	x2 = 3 * x2;
 	y1 = 3 * y1;
 	y2 = 3 * y2;
-	if (renk == 0) {
+	if (object == 0) {
 		r = 0;g = 0;b = 255;
 	}
-	else if (renk == 1)
+	else if (object == 1)
 	{
 		r = 255;g = 150;b = 255;
 	}
-	else if(renk==2)
+	else if(object==2)
 	{
 		r = 0;g = 255;b = 0;
 	}
-	else if (renk == 3)
+	else if (object == 3)
 	{
 		r = 255;g = 0;b =0;
 	}
-	else if (renk == 4)
+	else if (object == 4)
 	{
 		r =255;g = 150;b = 0;
 	}
-	else if (renk == 5)
+	else if (object == 5)
 	{
 		r = 0;g = 150;b =255;
 	}
-	else if (renk == 6)
+	else if (object == 6)
 	{
 		r =0;g = 255;b =100;
 	}
@@ -631,33 +621,33 @@ void cizme(BYTE *Buffer, unsigned int Width, unsigned int Height,int padding , i
 	
 }
 
-BYTE *nesne_yakala(BYTE *Buffer, unsigned int Width, unsigned int Height)
+BYTE *object_recognition(BYTE *Buffer, unsigned int Width, unsigned int Height)
 {
-	int etiket_degeri[50];		//nesnelerin etiketlerinin tutulacagý dizi max 50 nesne icin tanýmlý
-	int M2;
-	int deger = 0;
-	int indis = 0;
+	int label_array[50];		//nesnelerin etiketlerinin tutulacagý dizi max 50 nesne icin tanýmlý
+	int C;		//center
+	int value = 0;
+	int index = 0;
 
 	for (int i = 1; i < Height - 1; i++)
 	{
 		for (int j = 1; j < Width - 1; j++)
 		{
-			M2 = (i*Width + j);
+			C = (i*Width + j);
 
-			if (Buffer[M2] > 0)					//goruntude geziyoruz ve 0'dan buyuk pixel'e rastlarsak yani bu piksel bir nesnenin parcasý ise
+			if (Buffer[C] > 0)					//goruntude geziyoruz ve 0'dan buyuk pixel'e rastlarsak yani bu piksel bir nesnenin parcasý ise
 			{
 				for (int k = 0; k < 50; k++)
 				{
-					if (Buffer[M2] == etiket_degeri[k])		// eger etiketlenmis nesne zaten dizide varsa deger 1'e setlenir
-						deger = 1;
+					if (Buffer[C] == label_array[k])		// eger etiketlenmis nesne zaten dizide varsa deger 1'e setlenir
+						value = 1;
 				}
-				if (deger != 1)								//deger 1'den farklýysa yani bu etikete sahip nesne bu dizide yoksa diziye eklenir 
+				if (value != 1)								//deger 1'den farklýysa yani bu etikete sahip nesne bu dizide yoksa diziye eklenir 
 				{
-					etiket_degeri[indis] = Buffer[M2];
-					indis++;
-					etiket_degeri[indis] = -1;				//nesnenin sonunu belirlemek için en son etiket degerinden sonra -1 atanýyor
+					label_array[index] = Buffer[C];
+					index++;
+					label_array[index] = -1;				//nesnenin sonunu belirlemek için en son etiket degerinden sonra -1 atanýyor
 				}
-				deger = 0;									//degeri tekrar 0'a setliyerek donguye devam ederiz
+				value = 0;									//degeri tekrar 0'a setliyerek donguye devam ederiz
 			}
 
 		}
@@ -666,7 +656,7 @@ BYTE *nesne_yakala(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	
 
 	//DAHA ONCEDEN HESAPLANMIS NESNELERIN MOMENTLERINI TANIMLADIK
-	float momentdeger[7];
+	float momentvalue[7];
 	float mercimek[7] = { 0.165087,0.00170739,0.00708642,0.000142945,2.59475e-07,-0.00802825,1.58015e-07 };
 	float cekirdek[7] = { 0.234149,0.0277601,1.0764,0.237477,0.105781,-0.196802,-0.0101849 };
 	float eriste[7] = { 1.00171,0.997429,22.9338,19.5061,761.183,19.5376,-11.6029 };
@@ -682,15 +672,15 @@ BYTE *nesne_yakala(BYTE *Buffer, unsigned int Width, unsigned int Height)
 
 	int x1, x2, y1, y2;
 	int a = 0, b = Width, c = 0, d = Height;
-	for (int k = 0; etiket_degeri[k] != -1; k++)	//etiketlerin tutuldugu dizinin sonuna gelene kadar dongude kaliriz
+	for (int k = 0; label_array[k] != -1; k++)	//etiketlerin tutuldugu dizinin sonuna gelene kadar dongude kaliriz
 	{
 		for (int i = 0; i < Height; i++)
 		{
 			for (int j = 0; j < Width; j++)
 			{
-				M2 = (i*Width + j);
+				C = (i*Width + j);
 
-				if (Buffer[M2] == etiket_degeri[k])		//goruntumuzde gezeriz ve etiketlenmis pixelleri buluruz
+				if (Buffer[C] == label_array[k])		//goruntumuzde gezeriz ve etiketlenmis pixelleri buluruz
 				{
 					if (j > a)							//nesnelerin uc sýnýrlarýný belirledik
 						a = j;
@@ -715,47 +705,47 @@ BYTE *nesne_yakala(BYTE *Buffer, unsigned int Width, unsigned int Height)
 		}
 	
 		//her sinirlari belirlenen nesne icin dinamik bir dizi olusturduk
-		int *nesnenin_dizisi = new int[(x2 - x1 + 1)*(y2 - y1 + 1)];
+		int *arrayOf_object = new int[(x2 - x1 + 1)*(y2 - y1 + 1)];
 		int h = 0;
 		
 		//moment hesaplamak için nesneleri olusturdugumuz dizi içine atttýk
 		for (int i = y1; i <= y2; i++)
 			for (int  j = x1; j <= x2; j++)
 			{
-				nesnenin_dizisi[h] = Buffer[i*Width+j];
+				arrayOf_object[h] = Buffer[i*Width+j];
 				h++;
 				
 			}
 		
 		//GORUNTU ICINDEN ETIKETLENMIS NESNEYI BULDUK VE SINIRLARINI BELIRLEDIKDEN SONRA BIR DIZIYE ATTIK
 		//BU DIZIYI NESNENIN MOMENTINI HESAPLAMAK ICIN OBJE'YE VERDÝK
-		HuMoments obje(nesnenin_dizisi, (x2 - x1 + 1), (y2 - y1 + 1));
+		HuMoments obje(arrayOf_object, (x2 - x1 + 1), (y2 - y1 + 1));
 		obje.calcOrgins();
 		obje.calcInvariantMoments();
 		float *moments = obje.getInvariantMoments();	//nesnenin hesaplanmýs 7 momentini bir diziye attýk
 		
 		//nesnenin moment deðeri ile diðer momenti belli olan nesnelerin momentleri oklid'e göre tek tek kýyaslanýr bir diziye atýlýr 
-		momentdeger[0] = oklid_Distance(moments, mercimek, 7);
-		momentdeger[1] = oklid_Distance(moments, eriste, 7);
-		momentdeger[2] = oklid_Distance(moments, nohut, 7);
-		momentdeger[3] = oklid_Distance(moments, fasulye, 7);
-		momentdeger[4] = oklid_Distance(moments, cekirdek, 7);
-		momentdeger[5] = oklid_Distance(moments, mýsýr, 7);
-		momentdeger[6] = oklid_Distance(moments, para, 7);
+		momentvalue[0] = oklid_Distance(moments, mercimek, 7);
+		momentvalue[1] = oklid_Distance(moments, eriste, 7);
+		momentvalue[2] = oklid_Distance(moments, nohut, 7);
+		momentvalue[3] = oklid_Distance(moments, fasulye, 7);
+		momentvalue[4] = oklid_Distance(moments, cekirdek, 7);
+		momentvalue[5] = oklid_Distance(moments, mýsýr, 7);
+		momentvalue[6] = oklid_Distance(moments, para, 7);
 		
 		//daha önceden bilinen hangi nesneye daha yakýnsa o nesneyi yakýn olan olarak tanimlariz
-		float kýyasla=10000000;
-		int nesneyi_tanýmla = 0;
+		float byComparison=10000000;
+		int object_identification = 0;
 		for (int i = 0; i < 7; i++)
 		{
-			if (momentdeger[i] < kýyasla)
+			if (momentvalue[i] < byComparison)
 			{
-				kýyasla = momentdeger[i];
-				nesneyi_tanýmla = i;		//7 nesneden hangisine daha yakinsa ona setlenir
+				byComparison = momentvalue[i];
+				object_identification = i;		//7 nesneden hangisine daha yakinsa ona setlenir
 			}
 		}
 
-		delete[] nesnenin_dizisi;		//dinamik dizimiz yer kaplamamsi icin her nesne hesabi sonrasinda silinir.
+		delete[] arrayOf_object;		//dinamik dizimiz yer kaplamamsi icin her nesne hesabi sonrasinda silinir.
 		//sýnýrlarý bulunan nesneleri kare içine alma(renksiz intensity goruntude cizme
 		for (int i = x1; i <= x2; i++)
 		{
@@ -770,7 +760,7 @@ BYTE *nesne_yakala(BYTE *Buffer, unsigned int Width, unsigned int Height)
 		}
 		a = 0, b = Width, c = 0, d = Height;		//her nesne icin hesap yapabilmek icin sinirlari eski haline setleriz
 
-		cizme(temp_buffer, Width, Height,padding, x1, x2, y1, y2, nesneyi_tanýmla);		//cizme fonksyonumuza sinirlari ve nesneyi vererek ona ozel renkle cevreleriz
+		draw(temp_buffer, Width, Height,padding, x1, x2, y1, y2, object_identification);		//cizme fonksyonumuza sinirlari ve nesneyi vererek ona ozel renkle cevreleriz
 		
 	}
 	
@@ -783,37 +773,37 @@ BYTE *nesne_yakala(BYTE *Buffer, unsigned int Width, unsigned int Height)
 
 }
 
-BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
+BYTE *canny_Andhough(BYTE *Buffer, unsigned int Width, unsigned int Height)
 {
 	BYTE *Raw_Intensity;
 	Raw_Intensity = ConvertBMPToIntensity(Buffer, Width, Height);
 
-	int M,indis=0;
-	int sonuc;
-	int *dikeyde_turev = new int[(Width - 2)*(Height - 2)];
+	int C,index=0;	//Center
+	int result;
+	int *vertical_derivative = new int[(Width - 2)*(Height - 2)];
 	for (int i = 1; i < Height-1; i++)
 	{
 		for (int j = 1; j < Width-1; j++)
 		{
-			M = (i*Width + j);
+			C = (i*Width + j);
 			// 1 2 1 - 0 0 0 - -1 -2 -1  maskesini gezidiriyoruz	//kenar yönü yatayda
-			sonuc = (1* Raw_Intensity[(M - Width - 1)] + 2* Raw_Intensity[(M - Width)] + 1* Raw_Intensity[(M - Width + 1)] + 0* Raw_Intensity[(M - 1)] + 0* Raw_Intensity[M] + 0* Raw_Intensity[(M + 1)] + (-1)*Raw_Intensity[(M + Width - 1)] + (-2)*Raw_Intensity[(M + Width)] + (-1)*Raw_Intensity[(M + Width + 1)]);
-			dikeyde_turev[indis] = sonuc;
-			indis++;
+			result = (1* Raw_Intensity[(C - Width - 1)] + 2* Raw_Intensity[(C - Width)] + 1* Raw_Intensity[(C - Width + 1)] + 0* Raw_Intensity[(C - 1)] + 0* Raw_Intensity[C] + 0* Raw_Intensity[(C + 1)] + (-1)*Raw_Intensity[(C + Width - 1)] + (-2)*Raw_Intensity[(C + Width)] + (-1)*Raw_Intensity[(C + Width + 1)]);
+			vertical_derivative[index] = result;
+			index++;
 		}
 	}
 	
-	indis = 0;
-	int *yatayda_turev = new int[(Width - 2)*(Height - 2)];
+	index = 0;
+	int *horizontal_derivative = new int[(Width - 2)*(Height - 2)];
 	for (int i = 1; i < Height - 1; i++)
 	{
 		for (int j = 1; j < Width - 1; j++)
 		{
-			M = (i*Width + j);
+			C = (i*Width + j);
 			// 1 0 -1 -  2 0 -2 -  1 0 -1  maskesini gezidiriyoruz		//kenar yönü dikeyde
-			sonuc = (1 * Raw_Intensity[(M - Width - 1)] + 0 * Raw_Intensity[(M - Width)] + (-1) *Raw_Intensity[(M - Width + 1)] + 2* Raw_Intensity[(M - 1)] + 0 * Raw_Intensity[M] + (-2) * Raw_Intensity[(M + 1)] + 1* Raw_Intensity[(M + Width - 1)] + 0* Raw_Intensity[(M + Width)] + (-1)*Raw_Intensity[(M + Width + 1)]);
-			yatayda_turev[indis] = sonuc;
-			indis++;
+			result = (1 * Raw_Intensity[(C - Width - 1)] + 0 * Raw_Intensity[(C - Width)] + (-1) *Raw_Intensity[(C - Width + 1)] + 2* Raw_Intensity[(C - 1)] + 0 * Raw_Intensity[C] + (-2) * Raw_Intensity[(C + 1)] + 1* Raw_Intensity[(C + Width - 1)] + 0* Raw_Intensity[(C + Width)] + (-1)*Raw_Intensity[(C + Width + 1)]);
+			horizontal_derivative[index] = result;
+			index++;
 		}
 	}
 
@@ -822,8 +812,8 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			deneme6[M] = round(yatayda_turev[M] / 4);
+			C = i * (Width - 2) + j;
+			deneme6[C] = round(horizontal_derivative[C] / 4);
 		}
 	}
 	long new_size6;
@@ -838,8 +828,8 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			deneme5[M] = round(dikeyde_turev[M] / 4);
+			C = i * (Width - 2) + j;
+			deneme5[C] = round(vertical_derivative[C] / 4);
 		}
 	}
 	long new_size5;
@@ -855,12 +845,12 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width -2; j++)
 		{
-			M = (i*(Width-2) + j);
+			C = (i*(Width-2) + j);
 			// 2 maske sonucunu topluyoruz  not: 255den daha buyuk degeler olabýlýr max 1020 olabýlýr
-			sonuc = abs(dikeyde_turev[M]) + abs(yatayda_turev[M]);
-			sonuc2 = dikeyde_turev[M] + yatayda_turev[M];
-			edge_image[M] = sonuc;
-			edge_image1[M] = sonuc2;
+			result = abs(vertical_derivative[C]) + abs(horizontal_derivative[C]);
+			sonuc2 = vertical_derivative[C] + horizontal_derivative[C];
+			edge_image[C] = result;
+			edge_image1[C] = sonuc2;
 		}
 	}
 	
@@ -869,8 +859,8 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			deneme4[M] = round(edge_image1[M] / 4);
+			C = i * (Width - 2) + j;
+			deneme4[C] = round(edge_image1[C] / 4);
 		}
 	}
 	long new_size4;
@@ -880,39 +870,39 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	SaveBMP(temp_buffer4, Width - 2, Height - 2, new_size4, output4);
 	
 	
-	float Q;
+	float Q; //Angle
 	
 	for (int i = 0; i < Height - 2; i++)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = (i*(Width-2) + j);
+			C = (i*(Width-2) + j);
 			
-			Q = atan2(dikeyde_turev[M] , yatayda_turev[M])*180/PI;		//q=tan^-1((dI/dy)/(dI/dx))		gradient drection
+			Q = atan2(vertical_derivative[C] , horizontal_derivative[C])*180/PI;		//q=tan^-1((dI/dy)/(dI/dx))		gradient drection
 	
 			// buldugumuz aciya gore buyukluk kýyaslamasý yapacagýz ve eger buyukse aynen kalacak degilse 0 atanacak boylece non-maximum suppresion matrisimizi elde edecegiz.
 			if ((0 <= Q && Q < 22.5) || (337.5 <= Q && Q<= 360) || (157.5 <= Q && Q < 202.5) || (0 > Q && Q> -22.5) || (-157.5 >= Q && Q > -202.5) || (-337.5 >= Q && Q >= -360))	// acý bu araliktaysa yatayda
 			{
 				if (j == 0)
 				{
-					if (edge_image[M] > edge_image[M + 1])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[C + 1])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 				else if (j == (Width - 2)-1)
 				{
-					if (edge_image[M] > edge_image[M - 1])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[C - 1])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 				else
 				{
-					if (edge_image[M] > edge_image[M - 1] && edge_image[M] > edge_image[M + 1])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[C - 1] && edge_image[C] > edge_image[C + 1])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 				
 			}
@@ -922,30 +912,30 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 
 				if ((j == 0 && i == 0) || (i == (Height - 2-1) && j == (Width - 2)-1))
 				{
-					edge_image[M] = edge_image[M];
+					edge_image[C] = edge_image[C];
 				}
 					
 				else if ((i == 0) || (j == (Width - 2)-1))
 				{
-					if (edge_image[M] > edge_image[M + (Width - 2) - 1])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[C + (Width - 2) - 1])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 
 				else if ((j == 0) || (i == (Height - 2)-1))
 				{
-					if (edge_image[M] > edge_image[(M - (Width - 2) + 1)])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[(C - (Width - 2) + 1)])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 				else
 				{
-					if (edge_image[M] > edge_image[(M - (Width - 2) + 1)] && edge_image[M] > edge_image[M + (Width - 2) - 1])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[(C - (Width - 2) + 1)] && edge_image[C] > edge_image[C + (Width - 2) - 1])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 				
 			}
@@ -954,24 +944,24 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 			{
 				if (i == 0)
 				{
-					if (edge_image[M] > edge_image[M + (Width - 2)])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[C + (Width - 2)])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 				else if (i == (Height - 2-1))
 				{
-					if (edge_image[M] > edge_image[(M - (Width - 2))])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[(C - (Width - 2))])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 				else
 				{
-					if (edge_image[M] > edge_image[M - (Width - 2)] && edge_image[M] > edge_image[M + (Width - 2)])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[C - (Width - 2)] && edge_image[C] > edge_image[C + (Width - 2)])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 			}
 
@@ -979,31 +969,31 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 			{
 				if ((j == 0 && i == (Height - 2)-1) || (i == 0 && j == (Width - 2)-1))
 				{
-					edge_image[M] = edge_image[M];
+					edge_image[C] = edge_image[C];
 				}
 
 				else if (j == 0 || i == 0)
 				{
-					if (edge_image[M] > edge_image[M + (Width - 2) + 1])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[C + (Width - 2) + 1])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 
 				else if (i == (Height - 2-1) || j == (Width - 2-1))
 				{
-					if (edge_image[M] > edge_image[(M - (Width - 2) - 1)])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[(C - (Width - 2) - 1)])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 
 				else
 				{
-					if (edge_image[M] > edge_image[(M - (Width - 2) - 1)] && edge_image[M] > edge_image[M + (Width - 2) + 1])
-						edge_image[M] = edge_image[M];
+					if (edge_image[C] > edge_image[(C - (Width - 2) - 1)] && edge_image[C] > edge_image[C + (Width - 2) + 1])
+						edge_image[C] = edge_image[C];
 					else
-						edge_image[M] = 0;
+						edge_image[C] = 0;
 				}
 				
 			}
@@ -1016,8 +1006,8 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			deneme3[M] = round(edge_image[M]/4);
+			C = i * (Width - 2) + j;
+			deneme3[C] = round(edge_image[C]/4);
 
 		}
 	}
@@ -1040,9 +1030,9 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	for (int i = 0; i < Height - 2; i++)
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			if (nonmaximum_suppression[M] > max_pixel)
-				max_pixel = nonmaximum_suppression[M];
+			C = i * (Width - 2) + j;
+			if (nonmaximum_suppression[C] > max_pixel)
+				max_pixel = nonmaximum_suppression[C];
 			
 		}
 	
@@ -1051,14 +1041,14 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			if (nonmaximum_suppression[M] <= 40)
+			C = i * (Width - 2) + j;
+			if (nonmaximum_suppression[C] <= 40)
 			{
-				nonmaximum_suppression[M] = 0;
+				nonmaximum_suppression[C] = 0;
 			}
-			else if (nonmaximum_suppression[M] >=max_pixel-50)
+			else if (nonmaximum_suppression[C] >=max_pixel-50)
 			{
-				nonmaximum_suppression[M] = 1;
+				nonmaximum_suppression[C] = 1;
 			}
 			
 		}
@@ -1070,8 +1060,8 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			deneme1[M] = round(nonmaximum_suppression[M] / 4);
+			C = i * (Width - 2) + j;
+			deneme1[C] = round(nonmaximum_suppression[C] / 4);
 
 		}
 	}
@@ -1088,11 +1078,11 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			if (nonmaximum_suppression[M] != 0 && nonmaximum_suppression[M] != 1)
+			C = i * (Width - 2) + j;
+			if (nonmaximum_suppression[C] != 0 && nonmaximum_suppression[C] != 1)
 			{
 				
-				 Q = atan2(dikeyde_turev[M], yatayda_turev[M]) * 180 / PI;		//q=tan^-1((dI/dy)/(dI/dx))		gradient drection
+				 Q = atan2(vertical_derivative[C], horizontal_derivative[C]) * 180 / PI;		//q=tan^-1((dI/dy)/(dI/dx))		gradient drection
 				
 
 				//buldugumuz acýnýn bu sefer tersine gore yani kenar dogrultusu boyunca komsularýna bakicaz eger 1 ise 1, 0 ise 0 vericez ikisi varsa 0'ý tercih edecegiz.
@@ -1100,27 +1090,27 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 				{
 					if (i == 0)
 					{
-						if (nonmaximum_suppression[M + (Width - 2)] == 1)
-							nonmaximum_suppression[M] =1;
-						else if(nonmaximum_suppression[M + (Width - 2)]==0)
-							nonmaximum_suppression[M] = 0;
+						if (nonmaximum_suppression[C + (Width - 2)] == 1)
+							nonmaximum_suppression[C] =1;
+						else if(nonmaximum_suppression[C + (Width - 2)]==0)
+							nonmaximum_suppression[C] = 0;
 
 
 					}
 					else if (i == (Height - 2) - 1)
 					{
-						if (nonmaximum_suppression[(M - (Width - 2))] == 1)
-							nonmaximum_suppression[M] =1;
-						else if(nonmaximum_suppression[(M - (Width - 2))] == 0)
-							nonmaximum_suppression[M] = 0;
+						if (nonmaximum_suppression[(C - (Width - 2))] == 1)
+							nonmaximum_suppression[C] =1;
+						else if(nonmaximum_suppression[(C - (Width - 2))] == 0)
+							nonmaximum_suppression[C] = 0;
 					}
 					else
 					{
-						if ((nonmaximum_suppression[(M - (Width - 2))] == 1 && nonmaximum_suppression[M + (Width - 2)] == 1))
-							nonmaximum_suppression[M] = 1;
+						if ((nonmaximum_suppression[(C - (Width - 2))] == 1 && nonmaximum_suppression[C + (Width - 2)] == 1))
+							nonmaximum_suppression[C] = 1;
 
-						else if((nonmaximum_suppression[(M - (Width - 2))] == 0 && nonmaximum_suppression[M + (Width - 2)] == 0) || (nonmaximum_suppression[(M - (Width - 2))] == 0 && nonmaximum_suppression[M + (Width - 2)] == 1) || (nonmaximum_suppression[(M - (Width - 2))] == 1 && nonmaximum_suppression[M + (Width - 2)] == 0))
-							nonmaximum_suppression[M] = 0;
+						else if((nonmaximum_suppression[(C - (Width - 2))] == 0 && nonmaximum_suppression[C + (Width - 2)] == 0) || (nonmaximum_suppression[(C - (Width - 2))] == 0 && nonmaximum_suppression[C + (Width - 2)] == 1) || (nonmaximum_suppression[(C - (Width - 2))] == 1 && nonmaximum_suppression[C + (Width - 2)] == 0))
+							nonmaximum_suppression[C] = 0;
 					}
 
 				}
@@ -1130,32 +1120,32 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 
 					if ((j == 0 && i == (Height - 2) - 1) || (i == 0 && j == (Width - 2) - 1))
 					{
-						nonmaximum_suppression[M] = 0;
+						nonmaximum_suppression[C] = 0;
 					}
 
 					else if (j == 0 || i == 0)
 					{
-						if (nonmaximum_suppression[M + (Width - 2) + 1] == 1)
-							nonmaximum_suppression[M] = 1;
-						else if(nonmaximum_suppression[M + (Width - 2) + 1] == 0)
-							nonmaximum_suppression[M] = 0;
+						if (nonmaximum_suppression[C + (Width - 2) + 1] == 1)
+							nonmaximum_suppression[C] = 1;
+						else if(nonmaximum_suppression[C + (Width - 2) + 1] == 0)
+							nonmaximum_suppression[C] = 0;
 					}
 
 					else if (i == (Height - 2 - 1) || j == (Width - 2 - 1))
 					{
-						if (nonmaximum_suppression[M - (Width - 2) - 1] == 1)
-							nonmaximum_suppression[M] = 1;
-						else if(nonmaximum_suppression[M - (Width - 2) - 1] == 0)
-							nonmaximum_suppression[M] = 0;
+						if (nonmaximum_suppression[C - (Width - 2) - 1] == 1)
+							nonmaximum_suppression[C] = 1;
+						else if(nonmaximum_suppression[C - (Width - 2) - 1] == 0)
+							nonmaximum_suppression[C] = 0;
 					}
 
 					else
 					{
-						if ((nonmaximum_suppression[(M - (Width - 2) - 1)] == 1 && nonmaximum_suppression[M + (Width - 2) + 1] == 1))
-							nonmaximum_suppression[M] = 1;
+						if ((nonmaximum_suppression[(C - (Width - 2) - 1)] == 1 && nonmaximum_suppression[C + (Width - 2) + 1] == 1))
+							nonmaximum_suppression[C] = 1;
 
-						else if((nonmaximum_suppression[(M - (Width - 2) - 1)] == 0 && nonmaximum_suppression[M + (Width - 2) + 1] == 0) || (nonmaximum_suppression[(M - (Width - 2) - 1)] == 0 && nonmaximum_suppression[M + (Width - 2) + 1] == 1) || (nonmaximum_suppression[(M - (Width - 2) - 1)] == 1 && nonmaximum_suppression[M + (Width - 2) + 1] == 0))
-							nonmaximum_suppression[M] = 0;
+						else if((nonmaximum_suppression[(C - (Width - 2) - 1)] == 0 && nonmaximum_suppression[C + (Width - 2) + 1] == 0) || (nonmaximum_suppression[(C - (Width - 2) - 1)] == 0 && nonmaximum_suppression[C + (Width - 2) + 1] == 1) || (nonmaximum_suppression[(C - (Width - 2) - 1)] == 1 && nonmaximum_suppression[C + (Width - 2) + 1] == 0))
+							nonmaximum_suppression[C] = 0;
 					}
 
 				}
@@ -1165,25 +1155,25 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 
 					if (j == 0)
 					{
-						if (nonmaximum_suppression[M + 1] == 1)
-							nonmaximum_suppression[M] =1;
-						else if(nonmaximum_suppression[M + 1] == 0)
-							nonmaximum_suppression[M] = 0;
+						if (nonmaximum_suppression[C + 1] == 1)
+							nonmaximum_suppression[C] =1;
+						else if(nonmaximum_suppression[C + 1] == 0)
+							nonmaximum_suppression[C] = 0;
 					}
 					else if (j == (Width - 2) - 1)
 					{
-						if (nonmaximum_suppression[M - 1] == 1)
-							nonmaximum_suppression[M] = nonmaximum_suppression[M - 1];
-						else if (nonmaximum_suppression[M - 1] == 0)
-							nonmaximum_suppression[M] = 0;
+						if (nonmaximum_suppression[C - 1] == 1)
+							nonmaximum_suppression[C] = nonmaximum_suppression[C - 1];
+						else if (nonmaximum_suppression[C - 1] == 0)
+							nonmaximum_suppression[C] = 0;
 					}
 					else
 					{
-						if ((nonmaximum_suppression[M - 1] == 1 && nonmaximum_suppression[M + 1] == 1))
-							nonmaximum_suppression[M] = 1;
+						if ((nonmaximum_suppression[C - 1] == 1 && nonmaximum_suppression[C + 1] == 1))
+							nonmaximum_suppression[C] = 1;
 
-						else if((nonmaximum_suppression[M - 1] == 0 && nonmaximum_suppression[M + 1] == 0) || (nonmaximum_suppression[M - 1] == 0 && nonmaximum_suppression[M + 1] == 1) || (nonmaximum_suppression[M - 1] == 1 && nonmaximum_suppression[M + 1] == 0))
-							nonmaximum_suppression[M] = 0;
+						else if((nonmaximum_suppression[C - 1] == 0 && nonmaximum_suppression[C + 1] == 0) || (nonmaximum_suppression[C - 1] == 0 && nonmaximum_suppression[C + 1] == 1) || (nonmaximum_suppression[C - 1] == 1 && nonmaximum_suppression[C + 1] == 0))
+							nonmaximum_suppression[C] = 0;
 					}
 
 				}
@@ -1193,32 +1183,32 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 
 					if ((j == 0 && i == 0) || (i == (Height - 2 - 1) && j == (Width - 2 - 1)))
 					{
-						nonmaximum_suppression[M] = 0;
+						nonmaximum_suppression[C] = 0;
 					}
 
 					else if ((i == 0) || (j == (Width - 2) - 1))
 					{
-						if (nonmaximum_suppression[M + (Width - 2) - 1] == 1)
-							nonmaximum_suppression[M] = 1;
-						else if (nonmaximum_suppression[M + (Width - 2) - 1] == 0)
-							nonmaximum_suppression[M] == 0;
+						if (nonmaximum_suppression[C + (Width - 2) - 1] == 1)
+							nonmaximum_suppression[C] = 1;
+						else if (nonmaximum_suppression[C + (Width - 2) - 1] == 0)
+							nonmaximum_suppression[C] == 0;
 
 					}
 
 					else if ((j == 0) || (i == (Height - 2) - 1))
 					{
-						if (nonmaximum_suppression[M + (Width - 2) + 1] == 1)
-							nonmaximum_suppression[M] =1;
-						else if(nonmaximum_suppression[M + (Width - 2) + 1] == 0)
-							nonmaximum_suppression[M] == 0;
+						if (nonmaximum_suppression[C + (Width - 2) + 1] == 1)
+							nonmaximum_suppression[C] =1;
+						else if(nonmaximum_suppression[C + (Width - 2) + 1] == 0)
+							nonmaximum_suppression[C] == 0;
 					}
 					else
 					{
-						if ((nonmaximum_suppression[(M - (Width - 2) + 1)] == 1 && nonmaximum_suppression[M + (Width - 2) - 1] == 1))
-							nonmaximum_suppression[M] = 1;
+						if ((nonmaximum_suppression[(C - (Width - 2) + 1)] == 1 && nonmaximum_suppression[C + (Width - 2) - 1] == 1))
+							nonmaximum_suppression[C] = 1;
 
-						else if((nonmaximum_suppression[(M - (Width - 2) + 1)] == 0 && nonmaximum_suppression[M + (Width - 2) - 1] == 0) || (nonmaximum_suppression[(M - (Width - 2) + 1)] == 0 && nonmaximum_suppression[M + (Width - 2) - 1] == 1) || (nonmaximum_suppression[(M - (Width - 2) + 1)] == 1 && nonmaximum_suppression[M + (Width - 2) - 1] == 0))
-							nonmaximum_suppression[M] = 0;
+						else if((nonmaximum_suppression[(C - (Width - 2) + 1)] == 0 && nonmaximum_suppression[C + (Width - 2) - 1] == 0) || (nonmaximum_suppression[(C - (Width - 2) + 1)] == 0 && nonmaximum_suppression[C + (Width - 2) - 1] == 1) || (nonmaximum_suppression[(C - (Width - 2) + 1)] == 1 && nonmaximum_suppression[C + (Width - 2) - 1] == 0))
+							nonmaximum_suppression[C] = 0;
 					}
 				}
 			}
@@ -1234,10 +1224,10 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			if (nonmaximum_suppression[M] == 0)
+			C = i * (Width - 2) + j;
+			if (nonmaximum_suppression[C] == 0)
 			{
-				binary_edge_image[M] = 0;
+				binary_edge_image[C] = 0;
 			}
 			/*else if (nonmaximum_suppression[M] == 1)
 			{
@@ -1245,7 +1235,7 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 			}*/
 			else
 			{
-				binary_edge_image[M] = 1;
+				binary_edge_image[C] = 1;
 			}
 		}
 	}
@@ -1255,14 +1245,14 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	{
 		for (int j = 0; j < Width - 2; j++)
 		{
-			M = i * (Width - 2) + j;
-			if (binary_edge_image[M] == 0)
+			C = i * (Width - 2) + j;
+			if (binary_edge_image[C] == 0)
 			{
-				deneme[M] = 0;
+				deneme[C] = 0;
 			}
 			else
 			{
-				deneme[M] = 255;
+				deneme[C] = 255;
 			}
 			
 		}
@@ -1273,14 +1263,14 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 	output = L"C://Users//Hakan58//Desktop//kenar_fotolar//binary.bmp";				//BMP goruntumuzu kaydederiz
 	SaveBMP(temp_buffer, Width-2, Height-2, new_size, output);
 
-	int d_sinir = (Height*4);
-	int *hough_transform = new int[d_sinir* 360];
+	int d_limit = (Height*4);
+	int *hough_transform = new int[d_limit* 360];
 	
-	for(int i=0; i<d_sinir; i++)
+	for(int i=0; i<d_limit; i++)
 		for (int j = 0; j < 360; j++)
 		{
-			M = i *360 + j;
-			hough_transform[M] = 0;
+			C = i *360 + j;
+			hough_transform[C] = 0;
 		}
 
 		int d;
@@ -1291,10 +1281,10 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 		{
 			for (int j = 0; j < Width - 2; j++)
 			{
-				M = i * (Width - 2) + j;
-				if (binary_edge_image[M] == 1)
+				C = i * (Width - 2) + j;
+				if (binary_edge_image[C] == 1)
 				{					
-					Q = round(atan2 (dikeyde_turev[M],yatayda_turev[M]) * 180 / PI);	//kenar yonunu bulduk
+					Q = round(atan2 (vertical_derivative[C],horizontal_derivative[C]) * 180 / PI);	//kenar yonunu bulduk
 
 					//negatif yonle gelen acýlarda aslýnda ayni yonu verdigi icin pozitife tamamladik
 					if (Q < 0)
@@ -1322,13 +1312,13 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 		{
 			for (int j = 0; j < 360; j++)
 			{
-				M = i * 360 + j;
+				C = i * 360 + j;
 				
-					if(hough_transform[M]>10)
-						deneme7[M] =255;
+					if(hough_transform[C]>10)
+						deneme7[C] =255;
 					else
 					{
-						deneme7[M] = 0;
+						deneme7[C] = 0;
 					}
 				
 			}
@@ -1344,12 +1334,12 @@ BYTE *kenar_bul(BYTE *Buffer, unsigned int Width, unsigned int Height)
 		int kenar_indisleri[500];
 		int acý_indisleri[500];
 		int k = 0;
-		for (int r = 0; r < d_sinir; r++)
+		for (int r = 0; r < d_limit; r++)
 		{
 			for (int c = 0; c < 360; c++)
 			{
-				M = r * 360 + c;
-				if(hough_transform[M] >20)
+				C = r * 360 + c;
+				if(hough_transform[C] >20)
 				{
 					kenar_indisleri[k] = r;
 					acý_indisleri[k] = c;
